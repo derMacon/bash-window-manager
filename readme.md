@@ -20,3 +20,4 @@ Utility that provides hotkey navigation between opened windows.
 - [ ] check if the window ids in the buffer actually exist
 - [ ] overwrite inactive window ids
 - [ ] implement a config template where window workspaces can be deposited
+- [ ] insert usage demo gif into readme
