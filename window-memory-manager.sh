@@ -25,6 +25,20 @@ function toggle_visibility {
   fi
 }
 
+function activate_visibility {
+  input=$1
+  window_id="${!input}"
+
+  active_window_id=$(xdotool getactivewindow)
+  if [[ "$active_window_id" == "$window_id" ]]; then
+    echo "minimize window: $window_id" >>$LOG_FILE
+    xdotool windowminimize $window_id
+  else
+    echo "activate window: $window_id" >>$LOG_FILE
+    xdotool windowactivate $window_id
+  fi
+}
+
 function debug_window_states {
   for window_id in $(xdotool search --onlyvisible ""); do
     window_name=$(xdotool getwindowname $window_id)
@@ -53,7 +67,13 @@ function read_buffer {
       var_value="${line#*=}"
 
       echo "$var_name=$var_value" >>$LOG_FILE
-      export $var_name=$var_value
+      window_pid=$(xdotool getwindowpid "$var_value" 2>/dev/null)
+      if [[ -z "$window_pid" ]]; then
+        echo 'cleaning buffer file from old window id' >>$LOG_FILE
+        sed -i "/$var_name=$var_value/d" "$BUFFER_FILE"
+      else
+        export $var_name=$var_value
+      fi
     fi
   done <"$BUFFER_FILE"
 }
@@ -76,9 +96,8 @@ read_buffer
 memory_slot_window_name="$MEM_PREFIX$1"
 
 if [[ -v "$memory_slot_window_name" ]]; then
-  echo 'memory slot taken - toggle visibility' >>$LOG_FILE
-  #  early_exit_when_already_allocated
-  toggle_visibility "$memory_slot_window_name"
+  echo 'memory slot taken - activate visibility' >>$LOG_FILE
+  activate_visibility "$memory_slot_window_name"
 else
   echo 'memory slot not taken - set slot with current selected window id' >>$LOG_FILE
   set_memory_slot "$memory_slot_window_name"
