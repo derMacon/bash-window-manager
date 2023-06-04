@@ -17,7 +17,5 @@ Utility that provides hotkey navigation between opened windows.
 - to reset the memory slots, configure another custom shortcut that takes in the letter 'r' as its argument
 
 ## Todo
-- [ ] check if the window ids in the buffer actually exist
-- [ ] overwrite inactive window ids
 - [ ] implement a config template where window workspaces can be deposited
 - [ ] insert usage demo gif into readme

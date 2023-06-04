@@ -31,8 +31,7 @@ function activate_visibility {
 
   active_window_id=$(xdotool getactivewindow)
   if [[ "$active_window_id" == "$window_id" ]]; then
-    echo "minimize window: $window_id" >>$LOG_FILE
-    xdotool windowminimize $window_id
+    echo "window with id '$window_id' already active" >>$LOG_FILE
   else
     echo "activate window: $window_id" >>$LOG_FILE
     xdotool windowactivate $window_id
@@ -79,11 +78,16 @@ function read_buffer {
 }
 
 function early_exit_when_already_allocated {
-  current_window_name=$(xdotool getwindowfocus getwindowname)
-  if [ "${current_window_name:0:${#MEM_PREFIX}}" = "$MEM_PREFIX" ]; then
-    echo 'window already allocated - early exit'
-    exit 1
-  fi
+  selected_window_id=$(xdotool getactivewindow)
+  for var in $(printenv | grep "^$prefix"); do
+    var_name="${var%%=*}"
+    var_value="${var#*=}"
+    if [[ "$var_value" == "$selected_window_id" ]]; then
+      echo "not allocating new slot because window with id \
+'$selected_window_id' already has slot '$var_name'" >>$LOG_FILE
+      exit 1
+    fi
+  done
 }
 
 if [ "$1" = "r" ]; then
@@ -100,5 +104,6 @@ if [[ -v "$memory_slot_window_name" ]]; then
   activate_visibility "$memory_slot_window_name"
 else
   echo 'memory slot not taken - set slot with current selected window id' >>$LOG_FILE
+  early_exit_when_already_allocated
   set_memory_slot "$memory_slot_window_name"
 fi
