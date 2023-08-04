@@ -9,7 +9,7 @@ Utility that provides hotkey navigation between opened windows.
   character as the memory slot identifier as a parameter for the script in the command section
 - save the settings 
 
-## Configuration
+## Usage
 - click on the window which should be in the direct access via shortcut
 - press the configured shortcut to set the memory slot for the current window
 - navigate to any other window and press the shortcut, now the previously configured window should open
