@@ -14,24 +14,12 @@ function set_memory_slot {
 function toggle_visibility {
   input=$1
   window_id="${!input}"
+  echo "toggle window_id: $window_id" >>$LOG_FILE
 
   active_window_id=$(xdotool getactivewindow)
   if [[ "$active_window_id" == "$window_id" ]]; then
     echo "minimize window: $window_id" >>$LOG_FILE
     xdotool windowminimize $window_id
-  else
-    echo "activate window: $window_id" >>$LOG_FILE
-    xdotool windowactivate $window_id
-  fi
-}
-
-function activate_visibility {
-  input=$1
-  window_id="${!input}"
-
-  active_window_id=$(xdotool getactivewindow)
-  if [[ "$active_window_id" == "$window_id" ]]; then
-    echo "window with id '$window_id' already active" >>$LOG_FILE
   else
     echo "activate window: $window_id" >>$LOG_FILE
     xdotool windowactivate $window_id
@@ -49,45 +37,27 @@ function reset_memory_slots {
   rm $BUFFER_FILE
 }
 
-function window_with_id_exists {
-  window_id=$1
-  window_info=$(xdotool search --onlyvisible --pid 0 $window_id 2>/dev/null)
-  if [[ -n $window_info ]]; then
-    return 0
-  else
-    echo 1
-  fi
-}
-
 function read_buffer {
   while IFS= read -r line; do
+    # Check if the line is a variable assignment
     if [[ "$line" == *"="* ]]; then
+      # Extract the variable name and value
       var_name="${line%%=*}"
       var_value="${line#*=}"
 
+      # Print the variable name and value
       echo "$var_name=$var_value" >>$LOG_FILE
-      window_pid=$(xdotool getwindowpid "$var_value" 2>/dev/null)
-      if [[ -z "$window_pid" ]]; then
-        echo 'cleaning buffer file from old window id' >>$LOG_FILE
-        sed -i "/$var_name=$var_value/d" "$BUFFER_FILE"
-      else
-        export $var_name=$var_value
-      fi
+      export $var_name=$var_value
     fi
   done <"$BUFFER_FILE"
 }
 
 function early_exit_when_already_allocated {
-  selected_window_id=$(xdotool getactivewindow)
-  for var in $(printenv | grep "^$prefix"); do
-    var_name="${var%%=*}"
-    var_value="${var#*=}"
-    if [[ "$var_value" == "$selected_window_id" ]]; then
-      echo "not allocating new slot because window with id \
-'$selected_window_id' already has slot '$var_name'" >>$LOG_FILE
-      exit 1
-    fi
-  done
+  current_window_name=$(xdotool getwindowfocus getwindowname)
+  if [ "${current_window_name:0:${#MEM_PREFIX}}" = "$MEM_PREFIX" ]; then
+    echo 'window already allocated - early exit'
+    exit 1
+  fi
 }
 
 if [ "$1" = "r" ]; then
@@ -100,10 +70,10 @@ read_buffer
 memory_slot_window_name="$MEM_PREFIX$1"
 
 if [[ -v "$memory_slot_window_name" ]]; then
-  echo 'memory slot taken - activate visibility' >>$LOG_FILE
-  activate_visibility "$memory_slot_window_name"
+  echo 'memory slot taken - toggle visibility' >>$LOG_FILE
+  #  early_exit_when_already_allocated
+  toggle_visibility "$memory_slot_window_name"
 else
   echo 'memory slot not taken - set slot with current selected window id' >>$LOG_FILE
-  early_exit_when_already_allocated
   set_memory_slot "$memory_slot_window_name"
 fi
